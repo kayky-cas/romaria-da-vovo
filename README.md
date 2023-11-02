@@ -1,3 +1,4 @@
+### Troca 
 Populacao: 200
 - Distancia: 22332.133353064422 em ?
 - Distancia: 22450.345549904534 em 107.824881307s
@@ -10,3 +11,9 @@ Populacao 500
 - Distancia: 21911.688911029785 in 62.596992829s
 - Distancia: 21877.752249810932 in 48.749711719s
 
+
+
+### Troca + Troca aleatoria
+Populacao: 200
+- Distancia: 17623.67383145928 in 169.200139371s
+- Distancia: 17593.80015301562 in 211.45878518s

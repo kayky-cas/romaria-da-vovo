@@ -104,6 +104,18 @@ impl Viagem {
 
         Viagem::from(cidades)
     }
+
+    fn trocar_rand(&self, rng: &mut ThreadRng) -> Self {
+        let len = self.cidades.len();
+        let mut cidades = self.cidades.clone();
+
+        let i = rng.gen_range(0..len / 2);
+        let j = rng.gen_range(len / 2..len);
+
+        cidades.swap(i, j);
+
+        Viagem::from(cidades)
+    }
 }
 
 const TAMANHO_POPULACAO: usize = 200;
@@ -139,7 +151,13 @@ fn main() {
         let idx = rng.gen_range(0..populacao.len());
         let viagem = &populacao[idx];
 
-        let mutacao = viagem.trocar(&mut rng).ordenar_metade();
+        let mutacao = [
+            viagem.trocar(&mut rng).ordenar_metade(),
+            viagem.trocar_rand(&mut rng).ordenar_metade(),
+        ]
+        .into_iter()
+        .min_by(|a, b| a.distancia.partial_cmp(&b.distancia).unwrap())
+        .unwrap();
 
         if mutacao.distancia < viagem.distancia {
             if mutacao.distancia < last_min_dist {
