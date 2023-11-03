@@ -70,30 +70,33 @@ impl From<Vec<Cidade>> for Viagem {
 }
 
 impl Viagem {
-    fn ordenar_metade(&self) -> Self {
-        let metade = self.cidades.len() / 2;
+    fn ordenar_metade(cidades: Vec<Cidade>) -> Self {
+        let metade = cidades.len() / 2;
 
-        let mut c1 = self.cidades[..metade].to_vec();
+        let mut c1 = cidades[..metade]
+            .iter()
+            .map(|c| (c.clone(), c.distancia(&cidades[0])))
+            .collect::<Vec<_>>();
 
-        c1.sort_by(|a, b| {
-            let ta = a.coordenadas.0 + a.coordenadas.1;
-            let tb = b.coordenadas.0 + b.coordenadas.1;
-            ta.partial_cmp(&tb).unwrap()
-        });
+        c1.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
-        let mut c2 = self.cidades[metade..].to_vec();
-        c2.sort_by(|a, b| {
-            let ta = a.coordenadas.0 + a.coordenadas.1;
-            let tb = b.coordenadas.0 + b.coordenadas.1;
-            tb.partial_cmp(&ta).unwrap()
-        });
+        let mut c2 = cidades[metade..]
+            .iter()
+            .map(|c| (c.clone(), c.distancia(&c1[0].0)))
+            .collect::<Vec<_>>();
 
-        c1.append(&mut c2);
+        c2.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
-        Viagem::from(c1)
+        let cidades = c1
+            .into_iter()
+            .map(|(c, _)| c)
+            .chain(c2.into_iter().map(|(c, _)| c))
+            .collect::<Vec<_>>();
+
+        Viagem::from(cidades)
     }
 
-    fn trocar(&self, rng: &mut ThreadRng) -> Self {
+    fn trocar(&self, rng: &mut ThreadRng) -> Vec<Cidade> {
         let len = self.cidades.len();
         let mut cidades = self.cidades.clone();
 
@@ -102,10 +105,10 @@ impl Viagem {
 
         cidades.swap(i, j);
 
-        Viagem::from(cidades)
+        cidades
     }
 
-    fn trocar_rand(&self, rng: &mut ThreadRng) -> Self {
+    fn trocar_rand(&self, rng: &mut ThreadRng) -> Vec<Cidade> {
         let len = self.cidades.len();
         let mut cidades = self.cidades.clone();
 
@@ -113,6 +116,30 @@ impl Viagem {
         let j = rng.gen_range(len / 2..len);
 
         cidades.swap(i, j);
+
+        cidades
+    }
+
+    fn colocar_final(&self, rng: &mut ThreadRng) -> Self {
+        let len = self.cidades.len();
+        let mut cidades = self.cidades.clone();
+
+        let i = rng.gen_range(0..len / 2);
+
+        let cidade = cidades.remove(i);
+        cidades.push(cidade);
+
+        Viagem::from(cidades)
+    }
+
+    fn colocar_comeco(&self, rng: &mut ThreadRng) -> Self {
+        let len = self.cidades.len();
+        let mut cidades = self.cidades.clone();
+
+        let i = rng.gen_range(len / 2..len);
+
+        let cidade = cidades.remove(i);
+        cidades.insert((len / 2) - 1, cidade);
 
         Viagem::from(cidades)
     }
@@ -135,7 +162,7 @@ fn main() {
 
     for _ in 0..TAMANHO_POPULACAO {
         cidades.shuffle(&mut rng);
-        let viagem = Viagem::from(cidades.clone()).ordenar_metade();
+        let viagem = Viagem::ordenar_metade(cidades.clone());
         populacao.push(viagem);
     }
 
@@ -152,8 +179,10 @@ fn main() {
         let viagem = &populacao[idx];
 
         let mutacao = [
-            viagem.trocar(&mut rng).ordenar_metade(),
-            viagem.trocar_rand(&mut rng).ordenar_metade(),
+            Viagem::ordenar_metade(viagem.trocar(&mut rng)),
+            Viagem::ordenar_metade(viagem.trocar_rand(&mut rng)),
+            //viagem.colocar_final(&mut rng).ordenar_metade(),
+            //viagem.colocar_comeco(&mut rng).ordenar_metade(),
         ]
         .into_iter()
         .min_by(|a, b| a.distancia.partial_cmp(&b.distancia).unwrap())

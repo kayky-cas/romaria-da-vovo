@@ -17,3 +17,8 @@ Populacao 500
 Populacao: 200
 - Distancia: 17623.67383145928 in 169.200139371s
 - Distancia: 17593.80015301562 in 211.45878518s
+- Distancia: 17241.51163572802 in 623.011424918s
+
+
+### Troca + Troca aleatoria + Melhor ordenador
+Distancia: 10490.69204161659 in 601.360035996s
