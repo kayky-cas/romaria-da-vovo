@@ -2,8 +2,9 @@ use std::{env, io::stdin, str::FromStr, time::Instant};
 
 use rand::{rngs::ThreadRng, seq::SliceRandom, thread_rng, Rng};
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 struct Cidade {
+    #[allow(dead_code)]
     nome: &'static str,
     coordenadas: (f64, f64),
 }
@@ -27,13 +28,13 @@ impl FromStr for Cidade {
             .next()
             .expect("Nao foi encontrado um X")
             .parse()
-            .expect("X deve ser um Double");
+            .expect("X deve ser um f64");
 
         let y: f64 = partes
             .next()
             .expect("Nao foi encontrado um Y")
             .parse()
-            .expect("Y deve ser um Double");
+            .expect("Y deve ser um f64");
 
         let cidade = partes
             .next()
@@ -48,7 +49,6 @@ impl FromStr for Cidade {
     }
 }
 
-#[derive(Debug)]
 struct Viagem {
     distancia: f64,
     cidades: Vec<Cidade>,
@@ -121,6 +121,8 @@ fn main() {
         .and_then(|x| x.parse().ok())
         .unwrap_or(100);
 
+    assert!(tamanho_populacao > 0);
+
     let mut rng = thread_rng();
     let mut populacao: Vec<Viagem> = Vec::with_capacity(tamanho_populacao);
 
@@ -161,7 +163,7 @@ fn main() {
         if mutacao.distancia < viagem.distancia {
             if mutacao.distancia < min_dist {
                 min_dist = mutacao.distancia;
-                println!("Distancia: {} em {:?}", min_dist, instant.elapsed());
+                println!("Distância: {} em {:?}", min_dist, instant.elapsed());
             }
 
             populacao[idx] = mutacao;
