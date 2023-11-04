@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"sort"
+	"time"
 )
 
 type Cidade struct {
@@ -36,7 +37,7 @@ func NewViagem(cidades []Cidade) Viagem {
 	})
 
 	sort.Slice(outraMetade, func(i, j int) bool {
-		return outraMetade[j].Distancia(cidades[0]) < outraMetade[i].Distancia(cidades[0])
+		return outraMetade[j].Distancia(cidades[len(cidades) - 1]) < outraMetade[i].Distancia(cidades[len(cidades) - 1])
 	})
 
 	cidades = append(metade, outraMetade...)
@@ -101,6 +102,8 @@ func main() {
 		}
 	}
 
+	start := time.Now()
+
 	for {
 		idx := rand.Intn(len(populacao))
 
@@ -119,7 +122,7 @@ func main() {
 
 		if viagem.Distancia < min {
 			min = viagem.Distancia
-			fmt.Println(min)
+			fmt.Printf("Melhor distancia: %f em %s\n", min, time.Since(start))
 		}
 
 		populacao[idx] = viagem
