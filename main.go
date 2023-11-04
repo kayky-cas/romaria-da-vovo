@@ -16,7 +16,7 @@ type Cidade struct {
 	}
 }
 
-func (c *Cidade) Distancia(cidade Cidade) float64 {
+func (c *Cidade) Distancia(cidade *Cidade) float64 {
 	dx := c.Coordenadas.X - cidade.Coordenadas.X
 	dy := c.Coordenadas.Y - cidade.Coordenadas.Y
 
@@ -28,30 +28,35 @@ type Viagem struct {
 	Distancia float64
 }
 
+func OrdenarCidades(cidades []Cidade) []Cidade {
+
+    metade := len(cidades) / 2
+
+    cidade := cidades[0]
+    sort.SliceStable(cidades[:metade], func(i, j int) bool {
+        return cidades[i].Distancia(&cidade) < cidades[j].Distancia(&cidade)
+    })
+
+    cidade = cidades[metade-1]
+    sort.SliceStable(cidades[metade:], func(i, j int) bool {
+        return cidades[metade + i].Distancia(&cidade) < cidades[metade + j].Distancia(&cidade)
+    })
+
+	return cidades
+}
+
 func NewViagem(cidades []Cidade) Viagem {
-	metade := cidades[:len(cidades)/2]
-	outraMetade := cidades[len(cidades)/2:]
 
-	sort.Slice(metade, func(i, j int) bool {
-		return metade[i].Distancia(cidades[0]) < metade[j].Distancia(cidades[0])
-	})
-
-	sort.Slice(outraMetade, func(i, j int) bool {
-		return outraMetade[j].Distancia(cidades[len(cidades) - 1]) < outraMetade[i].Distancia(cidades[len(cidades) - 1])
-	})
-
-	cidades = append(metade, outraMetade...)
-
-	distancia := cidades[0].Distancia(cidades[len(cidades)-1])
+	distancia := cidades[0].Distancia(&cidades[len(cidades)-1])
 
 	for i := 0; i < len(cidades)-1; i++ {
-		distancia += cidades[i].Distancia(cidades[i+1])
+		distancia += cidades[i].Distancia(&cidades[i+1])
 	}
 
 	return Viagem{cidades, distancia}
 }
 
-func (v *Viagem) Trocar() Viagem {
+func (v *Viagem) Trocar() []Cidade {
 	cidades := make([]Cidade, len(v.Cidades))
 	copy(cidades, v.Cidades)
 
@@ -60,10 +65,10 @@ func (v *Viagem) Trocar() Viagem {
 
 	cidades[i], cidades[j] = cidades[j], cidades[i]
 
-	return NewViagem(cidades)
+	return OrdenarCidades(cidades)
 }
 
-func (v *Viagem) TrocarAleatorio() Viagem {
+func (v *Viagem) TrocarAleatorio() []Cidade {
 	cidades := make([]Cidade, len(v.Cidades))
 	copy(cidades, v.Cidades)
 
@@ -72,11 +77,10 @@ func (v *Viagem) TrocarAleatorio() Viagem {
 
 	cidades[i], cidades[j] = cidades[j], cidades[i]
 
-	return NewViagem(cidades)
+	return OrdenarCidades(cidades)
 }
 
 func main() {
-	// Read cities from file in the stdin
 	var n int
 	fmt.Scanln(&n)
 
@@ -109,8 +113,8 @@ func main() {
 
 		viagem := populacao[idx]
 
-		viagemTroca := viagem.Trocar()
-		viagemTrocaAleatorio := viagem.TrocarAleatorio()
+		viagemTroca := NewViagem(viagem.Trocar())
+		viagemTrocaAleatorio := NewViagem(viagem.TrocarAleatorio())
 
 		if viagemTroca.Distancia < viagem.Distancia {
 			viagem = viagemTroca
