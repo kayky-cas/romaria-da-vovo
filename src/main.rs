@@ -1,4 +1,4 @@
-use std::{io::stdin, str::FromStr, time::Instant};
+use std::{env, io::stdin, str::FromStr, time::Instant};
 
 use rand::{rngs::ThreadRng, seq::SliceRandom, thread_rng, Rng};
 
@@ -70,28 +70,22 @@ impl From<Vec<Cidade>> for Viagem {
 }
 
 impl Viagem {
-    fn ordenar_metade(cidades: Vec<Cidade>) -> Self {
+    fn ordenar_metade(mut cidades: Vec<Cidade>) -> Self {
         let metade = cidades.len() / 2;
 
-        let mut c1 = cidades[..metade]
-            .iter()
-            .map(|c| (c.clone(), c.distancia(&cidades[0])))
-            .collect::<Vec<_>>();
+        let cidade = cidades[0].clone();
+        cidades[1..metade].sort_by(|a, b| {
+            a.distancia(&cidade)
+                .partial_cmp(&b.distancia(&cidade))
+                .unwrap()
+        });
 
-        c1.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
-
-        let mut c2 = cidades[metade..]
-            .iter()
-            .map(|c| (c.clone(), c.distancia(&c1[0].0)))
-            .collect::<Vec<_>>();
-
-        c2.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-
-        let cidades = c1
-            .into_iter()
-            .map(|(c, _)| c)
-            .chain(c2.into_iter().map(|(c, _)| c))
-            .collect::<Vec<_>>();
+        let cidade = cidades[metade - 1].clone();
+        cidades[metade..].sort_by(|a, b| {
+            a.distancia(&cidade)
+                .partial_cmp(&b.distancia(&cidade))
+                .unwrap()
+        });
 
         Viagem::from(cidades)
     }
@@ -119,39 +113,16 @@ impl Viagem {
 
         cidades
     }
-
-    fn colocar_final(&self, rng: &mut ThreadRng) -> Self {
-        let len = self.cidades.len();
-        let mut cidades = self.cidades.clone();
-
-        let i = rng.gen_range(0..len / 2);
-
-        let cidade = cidades.remove(i);
-        cidades.push(cidade);
-
-        Viagem::from(cidades)
-    }
-
-    fn colocar_comeco(&self, rng: &mut ThreadRng) -> Self {
-        let len = self.cidades.len();
-        let mut cidades = self.cidades.clone();
-
-        let i = rng.gen_range(len / 2..len);
-
-        let cidade = cidades.remove(i);
-        cidades.insert((len / 2) - 1, cidade);
-
-        Viagem::from(cidades)
-    }
 }
 
-const TAMANHO_POPULACAO: usize = 200;
-
 fn main() {
-    assert!(TAMANHO_POPULACAO > 0);
+    let tamanho_populacao = env::args()
+        .nth(1)
+        .and_then(|x| x.parse().ok())
+        .unwrap_or(100);
 
     let mut rng = thread_rng();
-    let mut populacao: Vec<Viagem> = Vec::with_capacity(TAMANHO_POPULACAO);
+    let mut populacao: Vec<Viagem> = Vec::with_capacity(tamanho_populacao);
 
     let mut cidades: Vec<Cidade> = stdin()
         .lines()
@@ -160,17 +131,18 @@ fn main() {
         .filter_map(|line| line.trim().parse().ok())
         .collect();
 
-    for _ in 0..TAMANHO_POPULACAO {
+    let mut min_dist = f64::MAX;
+
+    for _ in 0..tamanho_populacao {
         cidades.shuffle(&mut rng);
         let viagem = Viagem::ordenar_metade(cidades.clone());
+
+        if viagem.distancia < min_dist {
+            min_dist = viagem.distancia;
+        }
+
         populacao.push(viagem);
     }
-
-    let mut last_min_dist = populacao
-        .iter()
-        .map(|p| p.distancia)
-        .min_by(|a, b| a.partial_cmp(b).unwrap())
-        .unwrap();
 
     let instant = Instant::now();
 
@@ -181,21 +153,18 @@ fn main() {
         let mutacao = [
             Viagem::ordenar_metade(viagem.trocar(&mut rng)),
             Viagem::ordenar_metade(viagem.trocar_rand(&mut rng)),
-            //viagem.colocar_final(&mut rng).ordenar_metade(),
-            //viagem.colocar_comeco(&mut rng).ordenar_metade(),
         ]
         .into_iter()
         .min_by(|a, b| a.distancia.partial_cmp(&b.distancia).unwrap())
         .unwrap();
 
         if mutacao.distancia < viagem.distancia {
-            if mutacao.distancia < last_min_dist {
-                last_min_dist = mutacao.distancia;
-                println!("Distancia: {} in {:?}", last_min_dist, instant.elapsed());
+            if mutacao.distancia < min_dist {
+                min_dist = mutacao.distancia;
+                println!("Distancia: {} em {:?}", min_dist, instant.elapsed());
             }
 
             populacao[idx] = mutacao;
-            continue;
         }
     }
 }
