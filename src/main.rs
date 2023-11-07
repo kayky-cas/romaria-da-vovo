@@ -113,6 +113,36 @@ impl Viagem {
 
         cidades
     }
+
+    fn trocar_lado_1(&self, rng: &mut ThreadRng) -> Vec<Cidade> {
+        let len = self.cidades.len();
+        let mut cidades = self.cidades.clone();
+
+        let i = rng.gen_range(0..len / 2);
+        let cidade = cidades.remove(i);
+
+        cidades.push(cidade);
+
+        cidades
+    }
+
+    fn trocar_lado_2(&self, rng: &mut ThreadRng) -> Vec<Cidade> {
+        let len = self.cidades.len();
+        let mut cidades = self.cidades.clone();
+
+        let i = rng.gen_range(len / 2..len);
+        let cidade = cidades.remove(i);
+
+        cidades.insert(0, cidade);
+
+        cidades
+    }
+
+    fn embaralhar(&self, rng: &mut ThreadRng) -> Vec<Cidade> {
+        let mut cidades = self.cidades.clone();
+        cidades.shuffle(rng);
+        cidades
+    }
 }
 
 fn main() {
@@ -133,20 +163,20 @@ fn main() {
         .filter_map(|line| line.trim().parse().ok())
         .collect();
 
-    let mut min_dist = f64::MAX;
+    let mut distancia_minima = f64::MAX;
 
     for _ in 0..tamanho_populacao {
         cidades.shuffle(&mut rng);
         let viagem = Viagem::ordenar_metade(cidades.clone());
 
-        if viagem.distancia < min_dist {
-            min_dist = viagem.distancia;
+        if viagem.distancia < distancia_minima {
+            distancia_minima = viagem.distancia;
         }
 
         populacao.push(viagem);
     }
 
-    let instant = Instant::now();
+    let cronometro = Instant::now();
 
     loop {
         let idx = rng.gen_range(0..populacao.len());
@@ -155,15 +185,22 @@ fn main() {
         let mutacao = [
             Viagem::ordenar_metade(viagem.trocar(&mut rng)),
             Viagem::ordenar_metade(viagem.trocar_rand(&mut rng)),
+            Viagem::ordenar_metade(viagem.trocar_lado_1(&mut rng)),
+            Viagem::ordenar_metade(viagem.trocar_lado_2(&mut rng)),
+            Viagem::ordenar_metade(viagem.embaralhar(&mut rng)),
         ]
         .into_iter()
         .min_by(|a, b| a.distancia.partial_cmp(&b.distancia).unwrap())
         .unwrap();
 
         if mutacao.distancia < viagem.distancia {
-            if mutacao.distancia < min_dist {
-                min_dist = mutacao.distancia;
-                println!("Distância: {} em {:?}", min_dist, instant.elapsed());
+            if mutacao.distancia < distancia_minima {
+                distancia_minima = mutacao.distancia;
+                println!(
+                    "Distância: {} em {:?}",
+                    distancia_minima,
+                    cronometro.elapsed()
+                );
             }
 
             populacao[idx] = mutacao;
